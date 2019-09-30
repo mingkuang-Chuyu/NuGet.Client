@@ -148,7 +148,9 @@ namespace NuGet.Protocol.Plugins
                 _logger.Write(new TaskLogMessage(_logger.Now, response.RequestId, response.Method, response.Type, TaskState.Queued));
             }
 
-            Task.Run(async () =>
+            TaskCreationOptions options = GetTaskCreationOptions();
+
+            Task.Factory.StartNew(async () =>
                 {
                     // Top-level exception handler for a worker pool thread.
                     try
@@ -171,7 +173,7 @@ namespace NuGet.Protocol.Plugins
                         }
                     }
                 },
-                _cancellationToken);
+                _cancellationToken, options, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -211,7 +213,9 @@ namespace NuGet.Protocol.Plugins
                 _logger.Write(new TaskLogMessage(_logger.Now, request.RequestId, request.Method, request.Type, TaskState.Queued));
             }
 
-            Task.Run(async () =>
+            TaskCreationOptions options = GetTaskCreationOptions();
+
+            Task.Factory.StartNew(async () =>
                 {
                     // Top-level exception handler for a worker pool thread.
                     try
@@ -245,7 +249,7 @@ namespace NuGet.Protocol.Plugins
                         }
                     }
                 },
-                _cancellationToken);
+                _cancellationToken, options, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -260,6 +264,19 @@ namespace NuGet.Protocol.Plugins
             catch (ObjectDisposedException)
             {
             }
+        }
+
+        private TaskCreationOptions GetTaskCreationOptions()
+        {
+            TaskCreationOptions options = TaskCreationOptions.DenyChildAttach;
+
+            if (_connection is Connection connection &&
+                connection.State == ConnectionState.Handshaking)
+            {
+                options |= TaskCreationOptions.LongRunning;
+            }
+
+            return options;
         }
     }
 }
