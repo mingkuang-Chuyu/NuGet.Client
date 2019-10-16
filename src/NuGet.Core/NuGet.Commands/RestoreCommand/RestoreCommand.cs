@@ -480,7 +480,8 @@ namespace NuGet.Commands
                 {
                     // check if lock file is out of sync with project data
                     lockFileTelemetry.StartIntervalMeasure();
-                    isLockFileValid = PackagesLockFileUtilities.IsLockFileStillValid(_request.DependencyGraphSpec, packagesLockFile);
+                    string reason;
+                    (isLockFileValid, reason) = PackagesLockFileUtilities.IsLockFileStillValid(_request.DependencyGraphSpec, packagesLockFile);
                     lockFileTelemetry.EndIntervalMeasure(ValidateLockFileDuration);
 
                     if (isLockFileValid)
@@ -504,7 +505,7 @@ namespace NuGet.Commands
                         // bail restore since it's the locked mode but required to update the lock file.
                         // directly log to the request logger when we're not going to rewrite the assets file otherwise this log will
                         // be skipped for netcore projects.
-                        await _request.Log.LogAsync(RestoreLogMessage.CreateError(NuGetLogCode.NU1004, Strings.Error_RestoreInLockedMode));
+                        await _request.Log.LogAsync(RestoreLogMessage.CreateError(NuGetLogCode.NU1004, Strings.Error_RestoreInLockedMode + reason));
                     }
                 }
             }

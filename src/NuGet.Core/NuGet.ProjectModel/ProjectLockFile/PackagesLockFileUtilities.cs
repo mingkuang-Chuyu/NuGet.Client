@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using NuGet.Common;
@@ -66,7 +67,7 @@ namespace NuGet.ProjectModel
         /// <param name="dgSpec">The <see cref="DependencyGraphSpec"/> for the new project defintion.</param>
         /// <param name="nuGetLockFile">The current <see cref="PackagesLockFile"/>.</param>
         /// <returns>True if the lock file is valid false otherwise. </returns>
-        public static bool IsLockFileStillValid(DependencyGraphSpec dgSpec, PackagesLockFile nuGetLockFile)
+        public static (bool, string) IsLockFileStillValid(DependencyGraphSpec dgSpec, PackagesLockFile nuGetLockFile)
         {
             var uniqueName = dgSpec.Restore.First();
             var project = dgSpec.GetProjectSpec(uniqueName);
@@ -78,7 +79,14 @@ namespace NuGet.ProjectModel
                 .Distinct();
             if (project.TargetFrameworks.Count != lockFileFrameworks.Count())
             {
-                return false;
+
+                return (false,
+                        string.Format(
+                            CultureInfo.CurrentCulture,
+                            Strings.PackagesLockFile_MismatchedTargetFrameworks,
+                            string.Join(",", project.TargetFrameworks.Select(e => e.FrameworkName.GetShortFolderName())),
+                            string.Join(",", lockFileFrameworks.Select(e => e.GetShortFolderName()))
+                            ));
             }
 
             foreach (var framework in project.TargetFrameworks)
@@ -89,15 +97,22 @@ namespace NuGet.ProjectModel
                 if (target == null)
                 {
                     // a new target found in the dgSpec so invalidate existing lock file.
-                    return false;
+                    return (false,
+                            string.Format(
+                                CultureInfo.CurrentCulture,
+                                Strings.PackagesLockFile_NewTargetFramework,
+                                framework.FrameworkName.GetShortFolderName())
+                            );
                 }
 
                 var directDependencies = target.Dependencies.Where(dep => dep.Type == PackageDependencyType.Direct);
 
-                if (HasProjectDependencyChanged(framework.Dependencies, directDependencies))
+                (var hasChanged, var message) = HasProjectDependencyChanged(framework.Dependencies, directDependencies);
+                // TODO NK - Add the framework.
+                if (hasChanged)
                 {
                     // lock file is out of sync
-                    return false;
+                    return (false, message);
                 }
             }
 
@@ -111,7 +126,14 @@ namespace NuGet.ProjectModel
                             StringComparer.InvariantCultureIgnoreCase,
                             StringComparer.InvariantCultureIgnoreCase))
             {
-                return false;
+                return (false,
+                            string.Format(
+                                CultureInfo.CurrentCulture,
+                                Strings.PackagesLockFile_RuntimeIdentifiersChanged,
+                                string.Join(";", projectRuntimesKeys.OrderBy(e => e)),
+                                string.Join(";", lockFileRuntimes.OrderBy(e => e))
+                                )
+                            );
             }
 
             // Validate all P2P references
@@ -122,8 +144,13 @@ namespace NuGet.ProjectModel
 
                 if (target == null)
                 {
-                    // a new target found in the dgSpec so invalidate existing lock file.
-                    return false;
+                    return (false,
+                            string.Format(
+                                CultureInfo.CurrentCulture,
+                                Strings.PackagesLockFile_NewTargetFramework,
+                                framework.FrameworkName.GetShortFolderName()
+                                )
+                            );
                 }
 
                 var queue = new Queue<Tuple<string, string>>();
@@ -149,7 +176,14 @@ namespace NuGet.ProjectModel
                             if (projectDependency == null)
                             {
                                 // project dependency doesn't exist in lock file.
-                                return false;
+                                // TODO NK - Include the framework in the log message.
+                                return (false,
+                                    string.Format(
+                                        CultureInfo.CurrentCulture,
+                                        Strings.PackagesLockFile_ProjectReferenceAdded,
+                                        p2pProjectName // TODO NK - Figure out if p2puniquename or p2pprojectname is correct.
+                                        )
+                                    );
                             }
 
                             var p2pSpec = dgSpec.GetProjectSpec(p2pUniqueName);
@@ -172,7 +206,7 @@ namespace NuGet.ProjectModel
                                         if (HasP2PDependencyChanged(p2pSpecTargetFrameworkInformation.Dependencies, p2pSpecProjectRestoreMetadataFrameworkInfo.ProjectReferences, projectDependency, dgSpec))
                                         {
                                             // P2P transitive package dependencies have changed
-                                            return false;
+                                            return (false, "tbd");
                                         }
 
                                         foreach (var reference in p2pSpecProjectRestoreMetadataFrameworkInfo.ProjectReferences)
@@ -186,24 +220,24 @@ namespace NuGet.ProjectModel
                                     }
                                     else // This should never happen.
                                     {
-                                        return false;
+                                        return (false, "tbd");
                                     }
                                 }
                                 else
                                 {
-                                    return false;
+                                    return (false, "tbd");
                                 }
                             }
                             else
                             {
-                                return false;
+                                return (false, "tbd");
                             }
                         }
                     }
                 }
             }
 
-            return true;
+            return (true, null);
         }
 
         /// <summary>Compares two lock files to check if the structure is the same (all values are the same, other
@@ -304,29 +338,53 @@ namespace NuGet.ProjectModel
             return new LockFileValidityWithMatchedResults(isLockFileStillValid, matchedDependencies);
         }
 
-        private static bool HasProjectDependencyChanged(IEnumerable<LibraryDependency> newDependencies, IEnumerable<LockFileDependency> lockFileDependencies)
+        private static (bool, string) HasProjectDependencyChanged(IEnumerable<LibraryDependency> newDependencies, IEnumerable<LockFileDependency> lockFileDependencies)
         {
             // If the count is not the same, something has changed.
             // Otherwise we N^2 walk below determines whether anything has changed.
             var newPackageDependencies = newDependencies.Where(dep => dep.LibraryRange.TypeConstraint == LibraryDependencyTarget.Package);
             if(newPackageDependencies.Count() != lockFileDependencies.Count())
             {
-                return true;
+
+                return (true,
+                           string.Format(
+                               CultureInfo.CurrentCulture,
+                               Strings.PackagesLockFile_PackageReferencesHaveChanged,
+                               newPackageDependencies.Count(),
+                               lockFileDependencies.Count())
+                           );
             }
 
             foreach (var dependency in newPackageDependencies)
             {
                 var lockFileDependency = lockFileDependencies.FirstOrDefault(d => StringComparer.OrdinalIgnoreCase.Equals(d.Id, dependency.Name));
 
-                if (lockFileDependency == null || !EqualityUtility.EqualsWithNullCheck(lockFileDependency.RequestedVersion, dependency.LibraryRange.VersionRange))
+                if (lockFileDependency == null)
                 {
                     // dependency has changed and lock file is out of sync.
-                    return true;
+                    return (true,
+                               string.Format(
+                                   CultureInfo.CurrentCulture,
+                                   Strings.PackagesLockFile_PackageReferenceAdded,
+                                   dependency.Name)
+                            );
+                }
+                if (!EqualityUtility.EqualsWithNullCheck(lockFileDependency.RequestedVersion, dependency.LibraryRange.VersionRange))
+                {
+                    // dependency has changed and lock file is out of sync.
+                    return (true,
+                               string.Format(
+                                   CultureInfo.CurrentCulture,
+                                   Strings.PackagesLockFile_PackageReferenceVersionChanged,
+                                   dependency.Name,
+                                   lockFileDependency.RequestedVersion.ToNormalizedString(),
+                                   dependency.LibraryRange.VersionRange.ToNormalizedString())
+                            );
                 }
             }
 
             // no dependency changed. Lock file is still valid.
-            return false;
+            return (false, null);
         }
 
         private static bool HasP2PDependencyChanged(IEnumerable<LibraryDependency> newDependencies, IEnumerable<ProjectRestoreReference> projectRestoreReferences, LockFileDependency projectDependency, DependencyGraphSpec dgSpec)
