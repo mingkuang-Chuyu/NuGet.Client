@@ -10,6 +10,7 @@ using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.LibraryModel;
 using NuGet.ProjectModel.ProjectLockFile;
+using NuGet.Protocol.Plugins;
 using NuGet.Shared;
 
 namespace NuGet.ProjectModel
@@ -203,10 +204,13 @@ namespace NuGet.ProjectModel
 
                                     if (p2pSpecProjectRestoreMetadataFrameworkInfo != null)
                                     {
-                                        if (HasP2PDependencyChanged(p2pSpecTargetFrameworkInformation.Dependencies, p2pSpecProjectRestoreMetadataFrameworkInfo.ProjectReferences, projectDependency, dgSpec))
+                                        (var hasChanged, var message) = HasP2PDependencyChanged(p2pSpecTargetFrameworkInformation.Dependencies, p2pSpecProjectRestoreMetadataFrameworkInfo.ProjectReferences, projectDependency, dgSpec);
+
+                                        if (hasChanged)
                                         {
                                             // P2P transitive package dependencies have changed
-                                            return (false, "tbd");
+                                            // TODO NK - improve the error message
+                                            return (false, message);
                                         }
 
                                         foreach (var reference in p2pSpecProjectRestoreMetadataFrameworkInfo.ProjectReferences)
@@ -387,14 +391,8 @@ namespace NuGet.ProjectModel
             return (false, null);
         }
 
-        private static bool HasP2PDependencyChanged(IEnumerable<LibraryDependency> newDependencies, IEnumerable<ProjectRestoreReference> projectRestoreReferences, LockFileDependency projectDependency, DependencyGraphSpec dgSpec)
+        private static (bool, string) HasP2PDependencyChanged(IEnumerable<LibraryDependency> newDependencies, IEnumerable<ProjectRestoreReference> projectRestoreReferences, LockFileDependency projectDependency, DependencyGraphSpec dgSpec)
         {
-            if (projectDependency == null)
-            {
-                // project dependency doesn't exists in lock file so it's out of sync.
-                return true;
-            }
-
             // If the count is not the same, something has changed.
             // Otherwise we N^2 walk below determines whether anything has changed.
             var transitivelyFlowingDependencies = newDependencies.Where(
@@ -402,7 +400,15 @@ namespace NuGet.ProjectModel
 
             if (transitivelyFlowingDependencies.Count() + projectRestoreReferences.Count() != projectDependency.Dependencies.Count)
             {
-                return true;
+                return (true,
+                        string.Format(
+                            CultureInfo.CurrentCulture,
+                            Strings.PackagesLockFile_ProjectReferencesHasChange,
+                            projectDependency.Id,
+                            transitivelyFlowingDependencies.Count() + projectRestoreReferences.Count(),
+                            projectDependency.Dependencies.Count
+                            )
+                        );
             }
 
             foreach (var dependency in transitivelyFlowingDependencies)
@@ -411,6 +417,7 @@ namespace NuGet.ProjectModel
 
                 if (matchedP2PLibrary == null || !EqualityUtility.EqualsWithNullCheck(matchedP2PLibrary.VersionRange, dependency.LibraryRange.VersionRange))
                 {
+                    // Do it in a similar way as the above.
                     // P2P dependency has changed and lock file is out of sync.
                     return true;
                 }

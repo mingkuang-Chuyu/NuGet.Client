@@ -173,6 +173,9 @@
   <data name="PackagesLockFile_ProjectReferenceAdded" xml:space="preserve">
     <value>A new project reference was found {0}.</value>
   </data>
+  <data name="PackagesLockFile_ProjectReferencesHaveChanged" xml:space="preserve">
+    <value>The project references have changed. Project's project references count: {0}, lock file's project references count: {1}.</value>
+  </data>
   <data name="PackagesLockFile_RuntimeIdentifiersChanged" xml:space="preserve">
     <value>The project's runtime identifiers have changed from. Project's runtime identifiers: {0}, lock file's runtime identifiers {1}.</value>
   </data>

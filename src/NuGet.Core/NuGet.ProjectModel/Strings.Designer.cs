@@ -214,6 +214,15 @@ namespace NuGet.ProjectModel {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The project reference {0} has changed. Current dependencies count: {1}, lock file&apos;s dependencies count: {2}..
+        /// </summary>
+        internal static string PackagesLockFile_ProjectReferencesHasChange {
+            get {
+                return ResourceManager.GetString("PackagesLockFile_ProjectReferencesHasChange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The project&apos;s runtime identifiers have changed from. Project&apos;s runtime identifiers: {0}, lock file&apos;s runtime identifiers {1}..
         /// </summary>
         internal static string PackagesLockFile_RuntimeIdentifiersChanged {
