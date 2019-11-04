@@ -1220,4 +1220,5 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
+  <Import Project="NuGet.RestoreEx.targets" Condition="'$(RestoreEnableStaticGraph)' == 'true'" />
 </Project>

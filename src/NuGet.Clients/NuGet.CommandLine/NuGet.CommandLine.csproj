@@ -59,7 +59,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
@@ -78,6 +77,10 @@
     <PackageReference Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="1.16.30" />
     <ProjectReference Include="$(NuGetCoreSrcDirectory)NuGet.PackageManagement\NuGet.PackageManagement.csproj" />
     <ProjectReference Include="$(NuGetCoreSrcDirectory)NuGet.Build.Tasks\NuGet.Build.Tasks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -128,7 +131,7 @@
   <Import Project="$(BuildCommonDirectory)embedinterop.targets" />
 
   <!-- Do nothing. This basically strips away the framework assemblies from the resulting nuspec.-->
-  <Target Name ="_GetFrameworkAssemblyReferences" DependsOnTargets="ResolveReferences"/>
+  <Target Name="_GetFrameworkAssemblyReferences" DependsOnTargets="ResolveReferences" />
 
   <Target Name="GetSigningInputs" Returns="@(DllsToSign)">
     <ItemGroup>
