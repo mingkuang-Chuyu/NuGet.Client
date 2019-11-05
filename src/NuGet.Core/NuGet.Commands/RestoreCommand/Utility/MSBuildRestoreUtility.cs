@@ -848,7 +848,7 @@ namespace NuGet.Commands
             }
         }
 
-        private static WarningProperties GetWarningProperties(IMSBuildItem specItem)
+        internal static WarningProperties GetWarningProperties(IMSBuildItem specItem)
         {
             return WarningProperties.GetWarningProperties(
                 treatWarningsAsErrors: specItem.GetProperty("TreatWarningsAsErrors"),
@@ -856,7 +856,7 @@ namespace NuGet.Commands
                 noWarn: specItem.GetProperty("NoWarn"));
         }
 
-        private static RestoreLockProperties GetRestoreLockProperites(IMSBuildItem specItem)
+        internal static RestoreLockProperties GetRestoreLockProperites(IMSBuildItem specItem)
         {
             return new RestoreLockProperties(
                 specItem.GetProperty("RestorePackagesWithLockFile"),

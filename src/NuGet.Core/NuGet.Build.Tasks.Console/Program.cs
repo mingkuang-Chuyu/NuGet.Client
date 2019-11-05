@@ -6,64 +6,60 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-#if IS_CORECLR
-using System.Runtime.InteropServices;
-#endif
 using System.Threading.Tasks;
 using NuGet.Common;
 
 namespace NuGet.Build.Tasks.Console
 {
+    /// <summary>
+    /// Represents the main entry point to the console application.
+    /// </summary>
     internal static class Program
     {
-        private static readonly string[] DefaultWildcardMatchesToSkip =
-        {
-            // this is an ends with **\* without any *s.
-            @"^[^\*]*\*\*\\\*$",
-
-            // file spec ends with **\*.* without any other *s
-            @"^[^\*]*\*\*\\\*\.\*$",
-
-            // file spec ends with ** without any other *s
-            @"^[^\*]*\*\*$",
-
-            // file spec ends with * with no other wildcards
-            @"^[^\*]*\*$",
-
-            // file spec has a **\* but has no other directories after the **\* and no other wildcards.
-            @"^[^\*]*\*\*\\\*[^\\|\*]*$",
-
-            // file spec has *.* but no other star in it
-            @"^[^\*]*\\\*\.\*$",
-
-            // file spec ends with text\optional text*extension
-            @"^[^\*]*\\[^\*|\\]*\*[^\*|\\]+$",
-
-            // just a wildcard file name or extension
-            @"^\*[^\\|\*]+$",
-        };
-
+        /// <summary>
+        /// A <see cref="T:char[]" /> containing the equals sign '=' to be used to split key/value pairs that are separated by it.
+        /// </summary>
         private static readonly char[] EqualSign = { '=' };
 
+        /// <summary>
+        /// The main entry point to the console application.
+        /// </summary>
+        /// <param name="args">The command-line arguments.</param>
+        /// <returns><code>0</code> if the application ran successfully with no errors, otherwise <code>1</code>.</returns>
         public static async Task<int> Main(string[] args)
         {
-            var properties = ParseProperties(args[0]);
-            var msbuildExePath = new FileInfo(args[1]);
-            var entryProjectPath = args[2];
-            var globalProperties = ParseProperties(args[3]);
-            var debug = globalProperties.TryGetValue("NuGetDebug", out var debugValue) && string.Equals(debugValue, "true", StringComparison.OrdinalIgnoreCase);
+            var debug = IsDebug();
 
             if (debug)
             {
+#if IS_CORECLR
+                System.Console.WriteLine("Waiting for debugger to attach to Process ID: {Process.GetCurrentProcess().Id}");
+
+                while (!Debugger.IsAttached)
+                    System.Threading.Thread.Sleep(100);
+
+                Debugger.Break();
+#else
                 Debugger.Launch();
+#endif
             }
 
-            Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildExePath.FullName);
-            Environment.SetEnvironmentVariable("MSBuildCacheFileEnumerations", "1");
-            Environment.SetEnvironmentVariable("MSBuildLoadAllFilesAsReadonly", "1");
-            Environment.SetEnvironmentVariable("MSBuildSkipEagerWildCardEvaluationRegexes", string.Join(";", DefaultWildcardMatchesToSkip));
+            // Parse command-line arguments
+            if (!TryParseArguments(args, out var arguments))
+            {
+                return 1;
+            }
 
-            string msbuildDirectory = msbuildExePath.DirectoryName;
+            // Enable MSBuild feature flags
+            MSBuildFeatureFlags.MSBuildExePath = arguments.MSBuildExePath.FullName;
+            MSBuildFeatureFlags.EnableCacheFileEnumerations = true;
+            MSBuildFeatureFlags.LoadAllFilesAsReadonly = true;
+            MSBuildFeatureFlags.SkipEagerWildcardEvaluations = true;
+
+#if DEBUG
+            // The App.config contains relative paths to MSBuild which won't work for locally built copies so an AssemblyResolve event
+            // handler is used in order to locate the MSBuild assemblies
+            string msbuildDirectory = arguments.MSBuildExePath.DirectoryName;
 
             AppDomain.CurrentDomain.AssemblyResolve += (sender, resolveArgs) =>
             {
@@ -73,16 +69,29 @@ namespace NuGet.Build.Tasks.Console
 
                 return File.Exists(path) ? Assembly.LoadFrom(path) : null;
             };
+#endif
 
-            var dependencyGraphSpecGenerator = new DependencyGraphSpecGenerator(entryProjectPath, globalProperties)
+            using (var dependencyGraphSpecGenerator = new DependencyGraphSpecGenerator(debug: debug))
             {
-                Debug = debug
-            };
-
-            return await dependencyGraphSpecGenerator.RestoreAsync(properties) ? 0 : 1;
+                return await dependencyGraphSpecGenerator.RestoreAsync(arguments.EntryProjectPath, arguments.MSBuildGlobalProperties, arguments.Options) ? 0 : 1;
+            }
         }
 
-        private static Dictionary<string, string> ParseProperties(string value)
+        /// <summary>
+        /// Determines if a user specified that the current process is being debugged.
+        /// </summary>
+        /// <returns><code>true</code> if the user specified to debug the current process, otherwise <code>false</code>.</returns>
+        private static bool IsDebug()
+        {
+            return string.Equals(Environment.GetEnvironmentVariable("DEBUG_RESTORE_TASK"), bool.TrueString, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Parses a semicolon delimited list of equal sign separated key value pairs.
+        /// </summary>
+        /// <param name="value">The string containing a semicolon delimited list of key value pairs to parse.</param>
+        /// <returns>A <see cref="Dictionary{String,String}" /> containing the list of items as key value pairs.</returns>
+        private static Dictionary<string, string> ParseSemicolonDelimitedListOfKeyValuePairs(string value)
         {
             var properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -90,13 +99,48 @@ namespace NuGet.Build.Tasks.Console
             {
                 var pair = pairString.Split(EqualSign, 2);
 
-                if (pair.Length == 2)
+                if (pair.Length == 2 && !string.IsNullOrWhiteSpace(pair[0]))
                 {
-                    properties[pair[0]] = pair[1];
+                    properties[pair[0].Trim()] = pair[1].Trim();
                 }
             }
 
             return properties;
+        }
+
+        /// <summary>
+        /// Parses command-line arguments.
+        /// </summary>
+        /// <param name="args">A <see cref="T:string[]" /> containing the process command-line arguments.</param>
+        /// <param name="arguments">A <see cref="T:Tuple&lt;Dictionary&lt;string, string&gt;, FileInfo, string, Dictionary&lt;string, string&gt;&gt;" /> that receives the parsed command-line arguments.</param>
+        /// <returns><code>true</code> if the arguments were successfully parsed, otherwise <code>false</code>.</returns>
+        private static bool TryParseArguments(string[] args, out (Dictionary<string, string> Options, FileInfo MSBuildExePath, string EntryProjectPath, Dictionary<string, string> MSBuildGlobalProperties) arguments)
+        {
+            if (args.Length != 4)
+            {
+                arguments = (null, null, null, null);
+
+                return false;
+            }
+
+            try
+            {
+                var options = ParseSemicolonDelimitedListOfKeyValuePairs(args[0]);
+                var msbuildExePath = new FileInfo(args[1]);
+                var entryProjectPath = args[2];
+                var globalProperties = ParseSemicolonDelimitedListOfKeyValuePairs(args[3]);
+
+                arguments = (options, msbuildExePath, entryProjectPath, globalProperties);
+
+                // Command-line is correct if no exceptions were thrown and the MSBuild path exists and an entry project were specified
+                return msbuildExePath.Exists && !string.IsNullOrWhiteSpace(entryProjectPath);
+            }
+            catch
+            {
+                arguments = (null, null, null, null);
+
+                return false;
+            }
         }
     }
 }

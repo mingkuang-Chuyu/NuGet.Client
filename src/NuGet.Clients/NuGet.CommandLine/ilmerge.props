@@ -20,7 +20,9 @@
     <MergeInclude Include="$(OutputPath)NuGet.Core.dll"/>
 
     <MergeExclude Include="$(OutputPath)Microsoft.VisualStudio.Setup.Configuration.Interop.dll"/>
+    <MergeExclude Include="$(OutputPath)Microsoft.Build.dll"/>
     <MergeExclude Include="$(OutputPath)Microsoft.Build.Framework.dll"/>
+    <MergeExclude Include="$(OutputPath)Microsoft.Build.Tasks.Core.dll"/>
     <MergeExclude Include="$(OutputPath)Microsoft.Build.Utilities.Core.dll"/>
     <MergeExclude Include="$(OutputPath)Microsoft.CSharp.dll"/>
     <MergeExclude Include="$(OutputPath)mscorlib.dll"/>
@@ -38,6 +40,12 @@
     <MergeExclude Include="$(OutputPath)System.Runtime.Serialization.dll"/>
     <MergeExclude Include="$(OutputPath)System.Security.dll"/>
     <MergeExclude Include="$(OutputPath)System.ServiceModel.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Threading.Tasks.Dataflow.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Buffers.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Memory.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Numerics.Vectors.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Resources.Extensions.dll"/>
+    <MergeExclude Include="$(OutputPath)System.Runtime.CompilerServices.Unsafe.dll"/>
     <MergeExclude Include="$(OutputPath)System.Xml.dll"/>
     <MergeExclude Include="$(OutputPath)System.Xml.Linq.dll"/>
     <MergeExclude Include="$(OutputPath)WindowsBase.dll"/>

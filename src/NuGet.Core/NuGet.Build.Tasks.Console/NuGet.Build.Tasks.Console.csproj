@@ -4,12 +4,11 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(TargetFrameworksExe)</TargetFrameworks>
-    <OutputType>Exe</OutputType>
     <TargetFramework />
+    <OutputType>Exe</OutputType>
     <Shipping>true</Shipping>
     <SkipShared>true</SkipShared>
     <IncludeInVSIX>true</IncludeInVSIX>
-    <PackProject>true</PackProject>
     <Description>NuGet restore console application.</Description>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <XPLATProject>true</XPLATProject>
