@@ -74,11 +74,14 @@ namespace NuGet.Protocol.Core.Types
                 tokenSource.CancelAfter(requestTimeout);
                 var apiKey = getApiKey(_source);
 
-                // if only a snupkg is being pushed, then don't try looking for nupkgs.
-                if(!packagePath.EndsWith(NuGetConstants.SnupkgExtension, StringComparison.OrdinalIgnoreCase))
+                bool fileNotFoundForSymbolsThrows = true;  
+                if (!packagePath.EndsWith(NuGetConstants.SnupkgExtension, StringComparison.OrdinalIgnoreCase))
                 {
-                    await PushPackage(packagePath, _source, apiKey, noServiceEndpoint, skipDuplicate
-                                      , requestTimeout, log, tokenSource.Token, isSnupkgPush: false);
+                    await PushPackage(packagePath, _source, apiKey, noServiceEndpoint, skipDuplicate,
+                                      requestTimeout, log, tokenSource.Token, isSnupkgPush: false);
+
+                    //Since this was a nupkg push, when we try pushing symbols later, don't error if there are no snupkg files found.
+                    fileNotFoundForSymbolsThrows = false;
                 }
 
                 // symbolSource is only set when:
@@ -88,13 +91,15 @@ namespace NuGet.Protocol.Core.Types
                 {
                     var symbolApiKey = getSymbolApiKey(symbolSource);
 
+                    //LocalFolderUtility.PackagePathResolved() 
+
                     await PushSymbols(packagePath, symbolSource, symbolApiKey,
                         noServiceEndpoint, symbolPackageUpdateResource,
-                        requestTimeout, log, tokenSource.Token);
+                        requestTimeout, log, tokenSource.Token, fileNotFoundThrows: fileNotFoundForSymbolsThrows);
                 }
             }
         }
-
+        [Obsolete("Consolidating to one PackageUpdateResource.Push method which has all parameters defined.")]
         public async Task Push(
             string packagePath,
             string symbolSource, // empty to not push symbols
@@ -161,15 +166,16 @@ namespace NuGet.Protocol.Core.Types
             SymbolPackageUpdateResourceV3 symbolPackageUpdateResource,
             TimeSpan requestTimeout,
             ILogger log,
-            CancellationToken token)
+            CancellationToken token,
+            bool fileNotFoundThrows = true)
         {
             var isSymbolEndpointSnupkgCapable = symbolPackageUpdateResource != null;
             // Get the symbol package for this package
             var symbolPackagePath = GetSymbolsPath(packagePath, isSymbolEndpointSnupkgCapable);
 
             // Push the symbols package if it exists
-            if (File.Exists(symbolPackagePath) || symbolPackagePath.IndexOf('*') != -1)
-            {
+            //if (File.Exists(symbolPackagePath) || symbolPackagePath.IndexOf('*') != -1)
+            //{
                 var sourceUri = UriUtility.CreateSourceUri(source);
 
                 // See if the api key exists
@@ -182,12 +188,13 @@ namespace NuGet.Protocol.Core.Types
                 }
 
                 var skipDuplicate = false;
-                await PushPackage(symbolPackagePath, source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, token, isSnupkgPush: isSymbolEndpointSnupkgCapable);
-            }
+                await PushPackage(symbolPackagePath, source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, token,
+                                  isSnupkgPush: isSymbolEndpointSnupkgCapable, fileNotFoundThrows: fileNotFoundThrows);
+           // }
         }
 
         /// <summary>
-        /// Get the symbols package from the original package. Removes the .nupkg and adds .symbols.nupkg
+        /// Get the symbols package from the original package. Removes the .nupkg and adds .snupkg or .symbols.nupkg.
         /// </summary>
         private static string GetSymbolsPath(string packagePath, bool isSnupkg)
         {
@@ -204,7 +211,8 @@ namespace NuGet.Protocol.Core.Types
             TimeSpan requestTimeout,
             ILogger log,
             CancellationToken token,
-            bool isSnupkgPush)
+            bool isSnupkgPush,
+            bool fileNotFoundThrows = true)
         {
             var sourceUri = UriUtility.CreateSourceUri(source);
 
@@ -216,12 +224,22 @@ namespace NuGet.Protocol.Core.Types
             }
 
             var packagesToPush = LocalFolderUtility.ResolvePackageFromPath(packagePath, isSnupkgPush);
+            bool packagePathResolved = LocalFolderUtility.PackagePathResolved(packagesToPush);
 
-            LocalFolderUtility.EnsurePackageFileExists(packagePath, packagesToPush);
-
-            foreach (var packageToPush in packagesToPush)
+            //No files were resolved.
+            if (!packagePathResolved)
             {
-                await PushPackageCore(source, apiKey, packageToPush, noServiceEndpoint, skipDuplicate, requestTimeout, log, token);
+                if (fileNotFoundThrows)
+                {
+                    LocalFolderUtility.ThrowUnableToFindFile(packagePath);
+                }
+            }
+            else
+            {
+                foreach (var packageToPush in packagesToPush)
+                {
+                    await PushPackageCore(source, apiKey, packageToPush, noServiceEndpoint, skipDuplicate, requestTimeout, log, token);
+                }
             }
         }
 
