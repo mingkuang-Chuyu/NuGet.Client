@@ -94,7 +94,7 @@ namespace NuGet.Protocol.Core.Types
                     //LocalFolderUtility.PackagePathResolved() 
 
                     await PushSymbols(packagePath, symbolSource, symbolApiKey,
-                        noServiceEndpoint, symbolPackageUpdateResource,
+                        noServiceEndpoint, skipDuplicate, symbolPackageUpdateResource,
                         requestTimeout, log, tokenSource.Token, fileNotFoundThrows: fileNotFoundForSymbolsThrows);
                 }
             }
@@ -163,6 +163,7 @@ namespace NuGet.Protocol.Core.Types
             string source,
             string apiKey,
             bool noServiceEndpoint,
+            bool skipDuplicate,
             SymbolPackageUpdateResourceV3 symbolPackageUpdateResource,
             TimeSpan requestTimeout,
             ILogger log,
@@ -187,7 +188,6 @@ namespace NuGet.Protocol.Core.Types
                         Strings.DefaultSymbolServer));
                 }
 
-                var skipDuplicate = false;
                 await PushPackage(symbolPackagePath, source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, token,
                                   isSnupkgPush: isSymbolEndpointSnupkgCapable, fileNotFoundThrows: fileNotFoundThrows);
            // }
