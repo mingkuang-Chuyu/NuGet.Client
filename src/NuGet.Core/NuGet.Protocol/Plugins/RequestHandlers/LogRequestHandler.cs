@@ -162,7 +162,7 @@ namespace NuGet.Protocol.Plugins
                     break;
 
                 case LogLevel.Error:
-                    _logger.LogError(request.Message);
+                    _logger.LogWarning("Plugin Error: " + request.Message);
                     break;
 
                 default:
