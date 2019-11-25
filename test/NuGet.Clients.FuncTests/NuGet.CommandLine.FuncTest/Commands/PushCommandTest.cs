@@ -469,7 +469,7 @@ namespace NuGet.CommandLine.FuncTest.Commands
                     result = CommandRunner.Run(
                         nuget,
                         packageDirectory,
-                        $"push {pushArgument} -Source {sourceName} -Timeout 110",
+                        $"push {pushArgument} -Source {sourceName} -Timeout 110 --debug",
                         waitForExit: true,
                         timeOutInMilliseconds: 120000); // 120 seconds
                 }

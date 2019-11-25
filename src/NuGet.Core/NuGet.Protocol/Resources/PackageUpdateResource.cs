@@ -91,7 +91,8 @@ namespace NuGet.Protocol.Core.Types
                 {
                     var symbolApiKey = getSymbolApiKey(symbolSource);
 
-                    //LocalFolderUtility.PackagePathResolved() 
+                    var packagesToPush = LocalFolderUtility.ResolvePackageFromPath(packagePath, isSnupkgPush);
+                    bool packagePathResolved = LocalFolderUtility.PackagePathResolved(packagesToPush);
 
                     await PushSymbols(packagePath, symbolSource, symbolApiKey,
                         noServiceEndpoint, skipDuplicate, symbolPackageUpdateResource,
@@ -174,23 +175,19 @@ namespace NuGet.Protocol.Core.Types
             // Get the symbol package for this package
             var symbolPackagePath = GetSymbolsPath(packagePath, isSymbolEndpointSnupkgCapable);
 
-            // Push the symbols package if it exists
-            //if (File.Exists(symbolPackagePath) || symbolPackagePath.IndexOf('*') != -1)
-            //{
-                var sourceUri = UriUtility.CreateSourceUri(source);
+            var sourceUri = UriUtility.CreateSourceUri(source);
 
-                // See if the api key exists
-                if (string.IsNullOrEmpty(apiKey) && !sourceUri.IsFile)
-                {
-                    log.LogWarning(string.Format(CultureInfo.CurrentCulture,
-                        Strings.Warning_SymbolServerNotConfigured,
-                        Path.GetFileName(symbolPackagePath),
-                        Strings.DefaultSymbolServer));
-                }
+            // See if the api key exists
+            if (string.IsNullOrEmpty(apiKey) && !sourceUri.IsFile)
+            {
+                log.LogWarning(string.Format(CultureInfo.CurrentCulture,
+                    Strings.Warning_SymbolServerNotConfigured,
+                    Path.GetFileName(symbolPackagePath),
+                    Strings.DefaultSymbolServer));
+            }
 
-                await PushPackage(symbolPackagePath, source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, token,
-                                  isSnupkgPush: isSymbolEndpointSnupkgCapable, fileNotFoundThrows: fileNotFoundThrows);
-           // }
+            await PushPackage(symbolPackagePath, source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, token,
+                                isSnupkgPush: isSymbolEndpointSnupkgCapable, fileNotFoundThrows: fileNotFoundThrows);
         }
 
         /// <summary>
@@ -211,8 +208,7 @@ namespace NuGet.Protocol.Core.Types
             TimeSpan requestTimeout,
             ILogger log,
             CancellationToken token,
-            bool isSnupkgPush,
-            bool fileNotFoundThrows = true)
+            bool isSnupkgPush)
         {
             var sourceUri = UriUtility.CreateSourceUri(source);
 
