@@ -999,6 +999,16 @@ namespace NuGet.Protocol
             }
         }
 
+        public static void blah(string packagePath)
+        {
+            var packagesToPush = LocalFolderUtility.ResolvePackageFromPath(packagePath);
+            bool packagePathResolved = LocalFolderUtility.PackagePathResolved(packagesToPush);
+            if (!packagePathResolved)
+            {
+                LocalFolderUtility.ThrowUnableToFindFile(packagePath);
+            }
+        }
+
         public static void ThrowUnableToFindFile(string packagePath)
         {
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,

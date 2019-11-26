@@ -87,7 +87,7 @@ namespace NuGet.CommandLine.XPlat
                         throw new ArgumentException(Strings.Push_MissingArguments);
                     }
 
-                    string packagePath = arguments.Values[0];
+                    var packagePath = GetPackagePath(arguments);
                     string sourcePath = source.Value();
                     string apiKeyValue = apikey.Value();
                     string symbolSourcePath = symbolSource.Value();
@@ -133,6 +133,11 @@ namespace NuGet.CommandLine.XPlat
                     return 0;
                 });
             });
+        }
+
+        private static string GetPackagePath(CommandArgument arguments)
+        {
+            return arguments.Values[0];
         }
     }
 }
