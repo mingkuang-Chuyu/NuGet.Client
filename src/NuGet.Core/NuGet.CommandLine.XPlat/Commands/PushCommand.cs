@@ -8,6 +8,7 @@ using NuGet.Commands;
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Credentials;
+using NuGet.Protocol;
 
 namespace NuGet.CommandLine.XPlat
 {
@@ -87,7 +88,7 @@ namespace NuGet.CommandLine.XPlat
                         throw new ArgumentException(Strings.Push_MissingArguments);
                     }
 
-                    var packagePath = GetPackagePath(arguments);
+                    string packagePath = GetPackagePath(arguments); //Throw if we canot resolve the files to be pushed.
                     string sourcePath = source.Value();
                     string apiKeyValue = apikey.Value();
                     string symbolSourcePath = symbolSource.Value();
@@ -135,8 +136,21 @@ namespace NuGet.CommandLine.XPlat
             });
         }
 
+        /// <summary>
+        /// Get the resolved Package Path, or throw if it cannot be resolved.
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
         private static string GetPackagePath(CommandArgument arguments)
         {
+
+            var packagesToPush = LocalFolderUtility.ResolvePackageFromPath(packagePath);
+            bool packagePathResolved = LocalFolderUtility.PackagePathResolved(packagesToPush);
+            if (!packagePathResolved)
+            {
+                LocalFolderUtility.ThrowUnableToFindFile(packagePath);
+            }
+
             return arguments.Values[0];
         }
     }
