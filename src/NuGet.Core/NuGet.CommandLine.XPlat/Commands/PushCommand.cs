@@ -143,7 +143,7 @@ namespace NuGet.CommandLine.XPlat
         /// <returns></returns>
         private static string GetPackagePath(CommandArgument arguments)
         {
-
+            string packagePath = arguments.Values[0];
             var packagesToPush = LocalFolderUtility.ResolvePackageFromPath(packagePath);
             bool packagePathResolved = LocalFolderUtility.PackagePathResolved(packagesToPush);
             if (!packagePathResolved)
@@ -151,7 +151,7 @@ namespace NuGet.CommandLine.XPlat
                 LocalFolderUtility.ThrowUnableToFindFile(packagePath);
             }
 
-            return arguments.Values[0];
+            return packagePath;
         }
     }
 }
