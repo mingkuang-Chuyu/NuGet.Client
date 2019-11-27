@@ -354,7 +354,8 @@ namespace NuGet.Protocol.Core.Types
                                 response =>
                                 {
                                     var responseStatusCode = EnsureSuccessStatusCode(response, codeNotToThrow, logger);
-                                    var logOccurred = DetectAndLogSkippedErrorOccurrence(responseStatusCode, source, pathToPackage, logger);
+                                    
+                                    var logOccurred = DetectAndLogSkippedErrorOccurrence(responseStatusCode, source, pathToPackage, response.ReasonPhrase, logger);
                                     showPushCommandPackagePushed = !logOccurred;
 
                                     return Task.FromResult(0);
@@ -396,7 +397,7 @@ namespace NuGet.Protocol.Core.Types
                     response =>
                     {
                         var responseStatusCode = EnsureSuccessStatusCode(response, codeNotToThrow, logger);
-                        var logOccurred = DetectAndLogSkippedErrorOccurrence(responseStatusCode, source, pathToPackage, logger);
+                        var logOccurred = DetectAndLogSkippedErrorOccurrence(responseStatusCode, source, pathToPackage, response.ReasonPhrase, logger);
                         showPushCommandPackagePushed = !logOccurred;
 
                         return Task.FromResult(0);
@@ -440,34 +441,40 @@ namespace NuGet.Protocol.Core.Types
         /// <param name="skippedErrorStatusCode">If provided, it indicates that this StatusCode occurred but was flagged as to be Skipped.</param>
         /// <param name="logger"></param>
         /// <returns>Indication of whether the log occurred.</returns>
-        private static bool DetectAndLogSkippedErrorOccurrence(HttpStatusCode? skippedErrorStatusCode, string source, string packageIdentity, ILogger logger)
+        private static bool DetectAndLogSkippedErrorOccurrence(HttpStatusCode? skippedErrorStatusCode, string source, string packageIdentity, string reasonMessage, ILogger logger)
         {
             bool skippedErrorOccurred = false;
 
             if (skippedErrorStatusCode != null)
             {
                 string messageToLog = null;
-                var conflictMessage = string.Format(
+                string messageToLogVerbose = null;
+                
+                switch (skippedErrorStatusCode.Value)
+                {
+                    case HttpStatusCode.Conflict:
+                        
+                        messageToLog = string.Format(
                                    CultureInfo.CurrentCulture,
                                    Strings.AddPackage_PackageAlreadyExists,
                                    packageIdentity,
                                    source);
-
-                switch (skippedErrorStatusCode.Value)
-                {
-                    case HttpStatusCode.Conflict:
-                        messageToLog = conflictMessage;
+                        messageToLogVerbose = reasonMessage;
                         skippedErrorOccurred = true;
                         break;
                     case HttpStatusCode.BadRequest:
                         messageToLog = Strings.NupkgPath_Invalid;
                         skippedErrorOccurred = true;
                         break;
-                    default: break; //Not a supported response code.
+                    default: break; //Not a skippable response code.
                 }
                 if (messageToLog != null)
                 {
                     logger?.LogMinimal(messageToLog);
+                }
+                if (messageToLogVerbose != null)
+                {
+                    logger?.LogVerbose(messageToLogVerbose);
                 }
             }
 

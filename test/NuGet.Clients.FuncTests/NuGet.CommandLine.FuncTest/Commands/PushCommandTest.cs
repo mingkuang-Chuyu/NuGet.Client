@@ -469,7 +469,7 @@ namespace NuGet.CommandLine.FuncTest.Commands
                     result = CommandRunner.Run(
                         nuget,
                         packageDirectory,
-                        $"push {pushArgument} -Source {sourceName} -Timeout 110 --debug",
+                        $"push {pushArgument} -Source {sourceName} -Timeout 110",
                         waitForExit: true,
                         timeOutInMilliseconds: 120000); // 120 seconds
                 }
@@ -832,14 +832,14 @@ namespace NuGet.CommandLine.FuncTest.Commands
                     result = CommandRunner.Run(
                         nuget,
                         packageDirectory,
-                        $"push {snupkgFileName} -Source {sourceName} -Timeout 110",
+                        $"push {snupkgFileName} -Source {sourceName} -Timeout 110 -Verbosity detailed",
                         waitForExit: true,
                         timeOutInMilliseconds: 120000); // 120 seconds
 
                     result2 = CommandRunner.Run(
                         nuget,
                         packageDirectory,
-                        $"push {snupkgFileName} -Source {sourceName} -Timeout 110 -SkipDuplicate",
+                        $"push {snupkgFileName} -Source {sourceName} -Timeout 110 -SkipDuplicate -Verbosity detailed",
                         waitForExit: true,
                         timeOutInMilliseconds: 120000); // 120 seconds
                 }
