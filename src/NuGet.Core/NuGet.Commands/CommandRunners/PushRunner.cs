@@ -29,7 +29,6 @@ namespace NuGet.Commands
             bool skipDuplicate,
             ILogger logger)
         {
-
             source = CommandRunnerUtility.ResolveSource(sourceProvider, source);
             symbolSource = CommandRunnerUtility.ResolveSymbolSource(sourceProvider, symbolSource);
 
