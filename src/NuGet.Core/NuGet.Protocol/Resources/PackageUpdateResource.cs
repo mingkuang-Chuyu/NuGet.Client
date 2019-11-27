@@ -228,7 +228,7 @@ namespace NuGet.Protocol.Core.Types
                     GetSourceDisplayName(source)));
             }
 
-            await PushAll(source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, packagesToPush, token);
+            await PushAll(source, apiKey, noServiceEndpoint, skipDuplicate, requestTimeout, log, nupkgsToPush, token);
         }
 
         private async Task PushAll(string source, string apiKey, bool noServiceEndpoint, bool skipDuplicate, TimeSpan requestTimeout, ILogger log, IEnumerable<string> packagesToPush, CancellationToken token)
