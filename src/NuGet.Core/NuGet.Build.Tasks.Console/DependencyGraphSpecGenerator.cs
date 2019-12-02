@@ -48,6 +48,8 @@ namespace NuGet.Build.Tasks.Console
 
         private readonly Lazy<MSBuildLogger> _msBuildLoggerLazy;
 
+        private readonly SettingsLoadingContext _settingsLoadContext = new SettingsLoadingContext();
+
         public DependencyGraphSpecGenerator(bool debug = false)
         {
             Debug = debug;
@@ -79,6 +81,8 @@ namespace NuGet.Build.Tasks.Console
                 // Disposing the logging queue will wait for the queue to be drained
                 _loggingQueueLazy.Value.Dispose();
             }
+
+            _settingsLoadContext.Dispose();
         }
 
         /// <summary>
@@ -645,7 +649,8 @@ namespace NuGet.Build.Tasks.Console
                 msbuildProjectInstance.GetProperty("RestoreSolutionDirectory"),
                 msbuildProjectInstance.GetProperty("RestoreRootConfigDirectory") ?? projectDirectory,
                 UriUtility.GetAbsolutePath(projectDirectory, msbuildProjectInstance.GetProperty("RestoreConfigFile")),
-                MachineWideSettingsLazy);
+                MachineWideSettingsLazy,
+                _settingsLoadContext);
 
             // Get the target frameworks for the project and the project instance for each framework
             var projectsByTargetFramework = GetProjectTargetFrameworks(projectWithInnerNodes);
