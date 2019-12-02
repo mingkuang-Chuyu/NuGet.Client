@@ -120,10 +120,6 @@ Copyright (c) .NET Foundation. All rights reserved.
           ItemName="_RestoreGraphEntryFiltered" />
     </RemoveDuplicates>
 
-    <PropertyGroup>
-      <SolutionDir Condition="'$(SolutionDir)'=='' or '$(SolutionDir)'=='*Undefined*'"></SolutionDir>
-    </PropertyGroup>
-
     <!-- Call restore -->
     <RestoreTask
       RestoreSolutionDirectory="$(SolutionDir)"

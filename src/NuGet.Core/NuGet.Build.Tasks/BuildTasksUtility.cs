@@ -397,7 +397,7 @@ namespace NuGet.Build.Tasks
                 installedPackageReferences.AddRange(GetInstalledPackageReferences(packagesConfigPath, allowDuplicatePackageIds: true, log));
             }
 
-            if (string.IsNullOrEmpty(repositoryPath) && !string.IsNullOrEmpty(solutionDir))
+            if (string.IsNullOrEmpty(repositoryPath) && !string.IsNullOrEmpty(solutionDir) && solutionDir != "*Undefined*")
             {
                 repositoryPath = Path.Combine(
                     solutionDir,
