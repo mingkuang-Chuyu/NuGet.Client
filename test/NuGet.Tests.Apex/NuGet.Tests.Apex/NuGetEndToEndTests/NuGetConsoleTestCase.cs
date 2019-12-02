@@ -28,7 +28,6 @@ namespace NuGet.Tests.Apex
 
             using (var testContext = new ApexTestContext(VisualStudio, projectTemplate, XunitLogger, noAutoRestore: true))
             {
-                CopyNetStandardLibraryToSource(testContext.UserPackagesFolder);
                 var packageName = "TestPackage";
                 var packageVersion = "1.0.0";
                 await CommonUtility.CreatePackageInSourceAsync(testContext.PackageSource, packageName, packageVersion);
@@ -312,41 +311,6 @@ namespace NuGet.Tests.Apex
         public static IEnumerable<object[]> GetPackagesConfigTemplates()
         {
             yield return new object[] { ProjectTemplate.ClassLibrary };
-        }
-
-        private bool CopyNetStandardLibraryToSource(string globalPackageDir)
-        {
-            // Arrange
-            EnsureVisualStudioHost();
-
-            using (var testContext = new ApexTestContext(VisualStudio, ProjectTemplate.NetStandardClassLib, XunitLogger, noAutoRestore: false, addNuGetOrgFeed: true))
-            {
-                string netstandardLib = Path.Combine(testContext.UserPackagesFolder, "netstandard.library");
-
-                //if netstandard.library doesn't exist, it means NuGetFallBackFolder works. Then no need to copy to global.package folder
-                if (!Directory.Exists(netstandardLib))
-                {
-                    return false;
-                }
-
-                //if netstandard.library exists, then we need to copy to global.package folder
-                foreach (var directory in Directory.GetDirectories(netstandardLib, "*", SearchOption.AllDirectories))
-                {
-                    var destDir = globalPackageDir + directory.Substring(netstandardLib.Length);
-                    if (!Directory.Exists(destDir))
-                    {
-                        Directory.CreateDirectory(destDir);
-                    }
-                }
-
-                //Copy files recursively to destination directories
-                foreach (var fileName in Directory.GetFiles(netstandardLib, "*", SearchOption.AllDirectories))
-                {
-                    var destFileName = globalPackageDir + fileName.Substring(netstandardLib.Length);
-                    File.Copy(fileName, destFileName);
-                }
-                return true;
-            }
         }
     }
 }

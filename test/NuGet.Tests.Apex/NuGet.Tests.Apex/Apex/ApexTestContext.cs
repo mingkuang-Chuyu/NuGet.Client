@@ -19,11 +19,10 @@ namespace NuGet.Tests.Apex
         public SolutionService SolutionService { get; }
         public ProjectTestExtension Project { get; }
         public string PackageSource => _pathContext.PackageSource;
-        public string UserPackagesFolder => _pathContext.UserPackagesFolder;
 
         public NuGetApexTestService NuGetApexTestService { get; }
 
-        public ApexTestContext(VisualStudioHost visualStudio, ProjectTemplate projectTemplate, ILogger logger, bool noAutoRestore = false, bool addNuGetOrgFeed = false)
+        public ApexTestContext(VisualStudioHost visualStudio, ProjectTemplate projectTemplate, ILogger logger, bool noAutoRestore = false)
         {
             logger.LogInformation("Creating test context");
             _pathContext = new SimpleTestPathContext();
@@ -31,11 +30,6 @@ namespace NuGet.Tests.Apex
             if (noAutoRestore)
             {
                 _pathContext.Settings.DisableAutoRestore();
-            }
-
-            if (addNuGetOrgFeed)
-            {
-                _pathContext.Settings.AddNuGetOrgFeed();
             }
 
             _visualStudio = visualStudio;
