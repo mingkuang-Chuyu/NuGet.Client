@@ -137,5 +137,17 @@ namespace NuGet.Test.Utility
                 item.Remove();
             }
         }
+
+        /// <summary>
+        /// Add NuGet.org to the feed and save the file.
+        /// </summary>
+        public void AddNuGetOrgFeed()
+        {
+            var section = GetOrAddSection(XML, "packageSources");
+
+            AddEntry(section, "NuGet.org", NuGet.Configuration.NuGetConstants.V3FeedUrl);
+
+            Save();
+        }
     }
 }
