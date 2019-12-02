@@ -7,6 +7,7 @@
     <TargetFramework />
     <OutputType>Exe</OutputType>
     <Shipping>true</Shipping>
+    <PackProject>true</PackProject>
     <SkipShared>true</SkipShared>
     <IncludeInVSIX>true</IncludeInVSIX>
     <Description>NuGet restore console application.</Description>
@@ -14,6 +15,10 @@
     <XPLATProject>true</XPLATProject>
     <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <BuildOutputTargetFolder>contentFiles\any</BuildOutputTargetFolder>
+    <!-- Suppress warning about a DLL not in a lib folder since on .NET Core the EXE is technically a DLL -->
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(IsVsixBuild)' == 'true' ">
