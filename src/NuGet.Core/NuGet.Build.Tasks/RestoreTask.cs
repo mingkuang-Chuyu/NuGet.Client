@@ -66,6 +66,17 @@ namespace NuGet.Build.Tasks
         /// </summary>
         public bool RestoreForceEvaluate { get; set; }
 
+        /// <summary>
+        /// Directory of solution file
+        /// </summary>
+        public string RestoreSolutionDirectory { get; set; }
+
+        /// <summary>
+        /// Restore projects using packages.config for dependencies.
+        /// </summary>
+        /// <returns></returns>
+        public bool RestorePackagesConfig { get; set; }
+
         public override bool Execute()
         {
 #if DEBUG
@@ -82,7 +93,7 @@ namespace NuGet.Build.Tasks
                 }
                 Debugger.Break();
 #else
-            Debugger.Launch();
+                Debugger.Launch();
 #endif
             }
 #endif
@@ -97,6 +108,8 @@ namespace NuGet.Build.Tasks
             log.LogDebug($"(in) RestoreForce '{RestoreForce}'");
             log.LogDebug($"(in) HideWarningsAndErrors '{HideWarningsAndErrors}'");
             log.LogDebug($"(in) RestoreForceEvaluate '{RestoreForceEvaluate}'");
+            log.LogDebug($"(in) RestoreSolutionDirectory '{RestoreSolutionDirectory}'");
+            log.LogDebug($"(in) RestorePackagesConfig '{RestorePackagesConfig}'");
 
             try
             {
@@ -114,7 +127,7 @@ namespace NuGet.Build.Tasks
                 return false;
             }
         }
- 
+
         private async Task<bool> ExecuteAsync(Common.ILogger log)
         {
             if (RestoreGraphItems.Length < 1 && !HideWarningsAndErrors)
@@ -122,7 +135,6 @@ namespace NuGet.Build.Tasks
                 log.LogWarning(Strings.NoProjectsProvidedToTask);
                 return true;
             }
-            var restoreSummaries = new List<RestoreSummary>();
 
             // Convert to the internal wrapper
             var wrappedItems = RestoreGraphItems.Select(MSBuildUtility.WrapMSBuildItem);
@@ -140,7 +152,9 @@ namespace NuGet.Build.Tasks
                 forceEvaluate: RestoreForceEvaluate,
                 hideWarningsAndErrors: HideWarningsAndErrors,
                 log: log,
-                cancellationToken: _cts.Token);
+                cancellationToken: _cts.Token,
+                restorePC: RestorePackagesConfig,
+                solutionDir: RestoreSolutionDirectory);
         }
 
         public void Cancel()
