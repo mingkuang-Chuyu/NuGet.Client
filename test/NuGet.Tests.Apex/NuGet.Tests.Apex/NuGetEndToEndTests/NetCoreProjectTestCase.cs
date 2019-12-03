@@ -23,6 +23,7 @@ namespace NuGet.Tests.Apex
 
             using (var testContext = new ApexTestContext(VisualStudio, projectTemplate, XunitLogger))
             {
+                System.IO.File.Copy(CommonUtility.GetNetStandardLibPackage(), testContext.PackageSource);
                 VisualStudio.AssertNoErrors();
             }
         }

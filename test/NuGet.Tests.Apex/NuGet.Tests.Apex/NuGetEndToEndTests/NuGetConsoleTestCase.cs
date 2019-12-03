@@ -32,6 +32,8 @@ namespace NuGet.Tests.Apex
                 var packageVersion = "1.0.0";
                 await CommonUtility.CreatePackageInSourceAsync(testContext.PackageSource, packageName, packageVersion);
 
+                File.Copy(CommonUtility.GetNetStandardLibPackage(), testContext.PackageSource);
+
                 var nugetConsole = GetConsole(testContext.Project);
 
                 nugetConsole.InstallPackageFromPMC(packageName, packageVersion);

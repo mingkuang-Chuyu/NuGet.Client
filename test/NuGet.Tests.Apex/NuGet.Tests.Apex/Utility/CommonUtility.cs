@@ -411,5 +411,28 @@ namespace NuGet.Tests.Apex
 
             return s;
         }
+
+        public static string GetNetStandardLibPackage()
+        {
+            DirectoryInfo currentDir = new DirectoryInfo(Directory.GetCurrentDirectory()); 
+            while (currentDir != null)
+            {
+                if (currentDir.GetFiles().Any(e => e.Name.Equals("NuGet.sln", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // We have found the repo root.
+                    break;
+                }
+
+                currentDir = currentDir.Parent;
+            }
+
+            DirectoryInfo repoRoot = currentDir;
+
+            string latestNetstandardFolder = Directory.GetDirectories(Path.Combine(repoRoot, "packages", "netstandard.library")).Last();
+
+            string latestNetstandardPackage = Directory.GetFiles(latestNetstandardFolder, "*.nupkg").First();
+
+            return latestNetstandardPackage;
+        }
     }
 }
