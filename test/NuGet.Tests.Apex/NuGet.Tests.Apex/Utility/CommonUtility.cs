@@ -428,7 +428,7 @@ namespace NuGet.Tests.Apex
 
             DirectoryInfo repoRoot = currentDir;
 
-            string latestNetstandardFolder = Directory.GetDirectories(Path.Combine(repoRoot, "packages", "netstandard.library")).Last();
+            string latestNetstandardFolder = Directory.GetDirectories(Path.Combine(repoRoot.FullName, "packages", "netstandard.library")).Last();
 
             string latestNetstandardPackage = Directory.GetFiles(latestNetstandardFolder, "*.nupkg").First();
 
