@@ -506,7 +506,7 @@ namespace NuGet.Build.Tasks
 
         internal static PackageSaveMode CalculateEffectivePackageSaveMode(ISettings settings)
         {
-            string packageSaveModeValue = "";
+            string packageSaveModeValue = string.Empty;
             PackageSaveMode effectivePackageSaveMode;
             if (string.IsNullOrEmpty(packageSaveModeValue))
             {
