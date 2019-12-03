@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -32,7 +33,11 @@ namespace NuGet.Tests.Apex
                 var packageVersion = "1.0.0";
                 await CommonUtility.CreatePackageInSourceAsync(testContext.PackageSource, packageName, packageVersion);
 
-                File.Copy(CommonUtility.GetNetStandardLibPackage(), testContext.PackageSource);
+                string netstandardLibraryFullPath = CommonUtility.GetNetStandardLibPackage();
+
+                string netstandardLibraryName = netstandardLibraryFullPath.Split(Path.DirectorySeparatorChar).Last();
+
+                File.Copy(netstandardLibraryFullPath, Path.Combine(testContext.PackageSource, netstandardLibraryName));
 
                 var nugetConsole = GetConsole(testContext.Project);
 

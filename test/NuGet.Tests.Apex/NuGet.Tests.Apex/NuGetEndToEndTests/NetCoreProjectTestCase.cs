@@ -3,6 +3,8 @@ using Microsoft.Test.Apex.VisualStudio.Solution;
 using NuGet.StaFact;
 using Xunit;
 using Xunit.Abstractions;
+using System.IO;
+using System.Linq;
 
 namespace NuGet.Tests.Apex
 {
@@ -23,7 +25,12 @@ namespace NuGet.Tests.Apex
 
             using (var testContext = new ApexTestContext(VisualStudio, projectTemplate, XunitLogger))
             {
-                System.IO.File.Copy(CommonUtility.GetNetStandardLibPackage(), testContext.PackageSource);
+                string netstandardLibraryFullPath = CommonUtility.GetNetStandardLibPackage();
+
+                string netstandardLibraryName = netstandardLibraryFullPath.Split(Path.DirectorySeparatorChar).Last();
+
+                File.Copy(netstandardLibraryFullPath, Path.Combine(testContext.PackageSource, netstandardLibraryName));
+                
                 VisualStudio.AssertNoErrors();
             }
         }
